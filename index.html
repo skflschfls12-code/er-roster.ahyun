@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>응급실 근무표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --ink:#1B2631; --muted:#5F6C78; --line:#D9E0E6; --soft:#EAEFF3;
+  --accent:#2E3C8C; --accent-ink:#FFFFFF;
+  --d:#F7D46B; --d-ink:#4A3A00; --e:#A4DABA; --e-ink:#0F3F25; --n:#2E3C8C; --n-ink:#FFFFFF;
+  --v:#F6C2CE; --v-ink:#6A1E33; --t:#D7C9EF; --t-ink:#3A2668; --s:#E1E6EB; --s-ink:#33414F;
+  --err:#D2342F; --err-bg:#FDE7E6; --warn:#B86E00; --warn-bg:#FFF2DA; --ok:#2C8556;
+  --sun:#D2342F; --sat:#2B66C8;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#11161B; --surface:#1A2128; --ink:#E5EAEF; --muted:#97A3AE; --line:#2C353E; --soft:#232B33;
+  --accent:#8F9DF0; --accent-ink:#10142C;
+  --d:#C9A33A; --d-ink:#1C1400; --e:#4F9A6E; --e-ink:#04170C; --n:#5767C9; --n-ink:#FFFFFF;
+  --v:#8C4659; --v-ink:#FFFFFF; --t:#6A5696; --t-ink:#FFFFFF; --s:#2C353E; --s-ink:#C9D2DB;
+  --err:#FF7A73; --err-bg:#3A1E1E; --warn:#F2B44C; --warn-bg:#3A2E16; --ok:#5CC38C; --sun:#FF7A73; --sat:#7EA7F2; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#11161B; --surface:#1A2128; --ink:#E5EAEF; --muted:#97A3AE; --line:#2C353E; --soft:#232B33;
+  --accent:#8F9DF0; --accent-ink:#10142C;
+  --d:#C9A33A; --d-ink:#1C1400; --e:#4F9A6E; --e-ink:#04170C; --n:#5767C9; --n-ink:#FFFFFF;
+  --v:#8C4659; --v-ink:#FFFFFF; --t:#6A5696; --t-ink:#FFFFFF; --s:#2C353E; --s-ink:#C9D2DB;
+  --err:#FF7A73; --err-bg:#3A1E1E; --warn:#F2B44C; --warn-bg:#3A2E16; --ok:#5CC38C; --sun:#FF7A73; --sat:#7EA7F2; color-scheme:dark; }
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding:14px 16px 0;}
+.bar{display:flex;align-items:center;gap:8px;max-width:1400px;margin:0 auto}
+.brand{font-weight:700;font-size:13px;color:var(--muted);margin-right:auto;letter-spacing:-.01em}
+.brand b{display:inline-block;width:18px;height:18px;border-radius:5px;background:var(--n);color:var(--n-ink);font-size:11px;text-align:center;line-height:18px;margin-right:6px;vertical-align:1px}
+.mnav{display:flex;align-items:center;gap:2px}
+.mnav h1{font-size:22px;margin:0 6px;font-weight:700;letter-spacing:-.02em;min-width:7.2em;text-align:center}
+.ic{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:16px;display:inline-grid;place-items:center;padding:0}
+.ic:disabled{opacity:.35;cursor:default}
+.tabs{display:flex;gap:4px;max-width:1400px;margin:12px auto 0;border-bottom:1px solid var(--line)}
+.tab{border:0;background:none;padding:9px 14px 10px;font-weight:500;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--ink);font-weight:700}
+.tab span{font-size:12px;color:var(--muted);margin-left:3px}
+main{max-width:1400px;margin:0 auto;padding:14px 16px 40px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:500;font-size:14px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;padding:9px 18px}
+.btn.primary:disabled{opacity:.7}
+.btn.ghost{background:none}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);margin-left:auto;align-items:center}
+.legend .sh{width:22px;height:22px;font-size:11px}
+.scroller{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;-webkit-overflow-scrolling:touch}
+table.grid{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+.grid th,.grid td{border-bottom:1px solid var(--soft);padding:0;text-align:center}
+.grid thead th{position:sticky;top:0;background:var(--surface);z-index:2;border-bottom:1px solid var(--line)}
+.grid .name{position:sticky;left:0;background:var(--surface);z-index:1;text-align:left;padding:6px 10px 6px 12px;min-width:84px;max-width:110px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid var(--line)}
+.grid thead .corner{z-index:3;color:var(--muted);font-size:12px}
+.grid .name small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;line-height:1.2}
+.grid .name small .k{color:var(--accent);font-weight:700}
+.dh{min-width:34px;padding:5px 0 !important;cursor:pointer;font-weight:500}
+.dh span{display:block;font-size:13px}
+.dh small{display:block;font-size:10.5px;color:var(--muted);font-weight:400}
+.dh.we{background:var(--soft) !important}
+.dh.sun span,.dh.sun small{color:var(--sun)} .dh.sat span,.dh.sat small{color:var(--sat)}
+td.c{height:38px;cursor:pointer;padding:2px !important}
+td.c:hover .sh{filter:brightness(.95)}
+.sh{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;font-weight:700;font-size:13px;position:relative;line-height:1}
+.sh i{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-style:normal;font-size:9px;font-weight:700;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:1px 2px;line-height:1;white-space:nowrap}
+.sh.D{background:var(--d);color:var(--d-ink)} .sh.E{background:var(--e);color:var(--e-ink)} .sh.N{background:var(--n);color:var(--n-ink)}
+.sh.O{color:var(--muted);font-weight:400} .sh.V{background:var(--v);color:var(--v-ink);font-size:12px} .sh.T{background:var(--t);color:var(--t-ink);font-size:12px}
+.sh.S{background:var(--s);color:var(--s-ink)} .sh.none{color:var(--line)}
+.sh.lock{box-shadow:inset 0 0 0 2px var(--ink)}
+.sh.O.lock{box-shadow:inset 0 0 0 1.5px var(--muted)}
+td.c.err{background:var(--err-bg)} td.c.err .sh{outline:2px solid var(--err);outline-offset:1px}
+td.c.warn{background:var(--warn-bg)}
+tr.head .name{color:var(--muted)}
+.st{min-width:32px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;border-left:1px solid var(--soft)}
+thead .st{font-weight:500}
+tfoot th,tfoot td{background:var(--bg)}
+tfoot .name{background:var(--bg) !important;font-size:12px;color:var(--muted)}
+.ft{font-size:12px;height:26px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ft.bad{color:var(--err);font-weight:700;background:var(--err-bg)} .ft.over{color:var(--warn);font-weight:700} .ft.ok{color:var(--ok)}
+#issues{margin-top:16px;max-width:720px}
+#issues h3{font-size:15px;margin:0 0 8px;display:flex;gap:6px;align-items:center}
+.pill{font-size:12px;border-radius:99px;padding:1px 8px;font-weight:700}
+.pill.err{background:var(--err-bg);color:var(--err)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+#issues ul,#shiss{list-style:none;margin:0;padding:0;font-size:13.5px}
+#issues li,#shiss li{padding:6px 10px;border-left:3px solid var(--warn);background:var(--surface);margin-bottom:4px;border-radius:0 8px 8px 0}
+#issues li.err,#shiss li.err{border-color:var(--err)}
+#issues li b{margin-right:6px;font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);font-size:14px;max-width:62ch}
+.allok{color:var(--ok);font-weight:700}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+/* 간호사 */
+.ncols{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+.side{order:-1}
+@media(min-width:860px){.ncols{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)} .side{order:0}}
+#nlist{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.nurse{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.nrow1{display:flex;gap:6px;align-items:center}
+.nm{flex:1;min-width:0;border:0;border-bottom:1px solid var(--line);background:none;padding:4px 2px;font-weight:700;font-size:16px}
+.nm:focus{outline:none;border-color:var(--accent)}
+.mv{display:flex;gap:4px}.mv .ic{width:30px;height:30px;font-size:14px}
+.ic.del{color:var(--err)}
+.tgs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 8px}
+.tg{border:1px solid var(--line);background:none;border-radius:99px;padding:4px 12px;font-size:13px;color:var(--muted)}
+.tg.on{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:500}
+.tail{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.tail input{flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:var(--bg);font-size:13px;letter-spacing:.05em}
+.auto{color:var(--ink)}
+.side h2,.set h2{font-size:15px;margin:0 0 6px}
+.side textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);font:inherit;resize:vertical}
+.side p,.set p{font-size:13px;color:var(--muted);margin:4px 0 10px;max-width:60ch}
+/* 설정 */
+.set{max-width:760px;display:grid;gap:28px}
+.staffwrap{overflow-x:auto}
+table.staff{border-collapse:collapse;width:100%}
+.staff th,.staff td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
+.staff tbody th{text-align:left;font-size:14px;white-space:nowrap}
+.trio{display:flex;gap:4px;justify-content:center}
+.trio label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:2px}
+.trio input{width:48px;padding:6px 4px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:15px;font-weight:700}
+.field{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.field input[type=text]{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--surface)}
+.rules{margin:0;padding-left:1.2em;font-size:14px;max-width:64ch}
+.rules li{margin:3px 0}
+/* 시트 */
+#shade{position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:40}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:18px 18px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px));max-width:520px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){#sheet{animation:none}}
+#sheet h3{margin:0 0 10px;font-size:16px}
+.picks{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.picks button{border:1px solid var(--line);border-radius:10px;padding:10px 0;background:var(--bg);font-weight:700}
+.picks button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.picks .D{background:var(--d);color:var(--d-ink);border:0}.picks .E{background:var(--e);color:var(--e-ink);border:0}.picks .N{background:var(--n);color:var(--n-ink);border:0}
+.picks .S{background:var(--s);color:var(--s-ink);border:0}
+.picks .V{background:var(--v);color:var(--v-ink);border:0}.picks .T{background:var(--t);color:var(--t-ink);border:0}
+#rolerow{margin-top:12px}
+#rolerow p{margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.roles{display:flex;gap:6px;flex-wrap:wrap}
+.roles button{border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:none;font-size:13px}
+.roles button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.shfoot{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+#shiss{margin-top:10px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:90vw;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#savewarn{background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:10px;font-size:13px;margin-bottom:10px}
+@media(max-width:600px){ .brand{display:none} .bar{justify-content:center} .mnav h1{font-size:19px} .legend{margin-left:0} .tab{padding:9px 10px 10px} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand"><b>ER</b>응급실 근무표</div>
+    <div class="mnav"><button class="ic" id="prev" aria-label="이전 달">‹</button><h1 id="month"></h1><button class="ic" id="next" aria-label="다음 달">›</button></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="grid">근무표</button>
+    <button class="tab" role="tab" data-tab="nurses">간호사<span id="nc"></span></button>
+    <button class="tab" role="tab" data-tab="settings">설정</button>
+  </nav>
+</header>
+<main>
+  <div id="savewarn" hidden>이 브라우저에서는 저장이 막혀 있어요. 창을 닫으면 내용이 사라지니 엑셀로 저장해 두세요.</div>
+  <section class="pane" id="pane-grid">
+    <div class="tools" id="gridtools">
+      <button class="btn primary" id="gen">자동 생성</button>
+      <button class="btn" id="clear">생성 칸 지우기</button>
+      <button class="btn" id="holi">공휴일 불러오기</button>
+      <button class="btn" id="xlsx" hidden>엑셀 저장</button>
+      <div class="legend"><span><span class="sh D">D</span></span><span><span class="sh E">E</span></span><span><span class="sh N">N</span></span><span><span class="sh V">연</span> 연차</span><span><span class="sh T">출</span> 출장</span><span><span class="sh O">/</span> OFF</span><span><span class="sh O lock">/</span> 테두리 = 직접 입력·고정</span></div>
+    </div>
+    <div class="scroller" id="gridwrap"></div>
+    <div id="issues"></div>
+  </section>
+  <section class="pane" id="pane-nurses" hidden>
+    <div class="ncols">
+      <div id="nlist"></div>
+      <aside class="side">
+        <h2>간호사 추가</h2>
+        <p>이름을 한 줄에 한 명씩 넣으면 여러 명이 한 번에 추가돼요. 추가한 뒤 KTAS 자격과 가능한 역할을 켜 주세요.</p>
+        <textarea id="bulk" placeholder="김하늘&#10;이도윤&#10;박서연"></textarea>
+        <button class="btn primary" id="addn" style="margin-top:8px">추가</button>
+        <h2 style="margin-top:22px">전월 마지막 5일</h2>
+        <p>나이트 후 OFF, 연속 근무 같은 조건을 이번 달 1일부터 지키려면 지난달 마지막 5일 근무가 필요해요. 지난달 근무표를 이 사이트에서 짰다면 자동으로 이어져요.</p>
+      </aside>
+    </div>
+  </section>
+  <section class="pane set" id="pane-settings" hidden>
+    <div>
+      <h2>근무별 필요 인원</h2>
+      <p>각 근무에 필요한 총인원과, 그중 칩·중간칩 자리 수예요. 나머지는 액팅으로 채워요.</p>
+      <div class="staffwrap" id="stafftbl"></div>
+    </div>
+    <div>
+      <h2>수간호사</h2>
+      <div class="field"><input type="text" id="headname" aria-label="수간호사 이름"><label><input type="checkbox" id="headshow"> 근무표에 S 줄 표시 (평일 S, 주말·공휴일 OFF)</label></div>
+    </div>
+    <div>
+      <h2>자동 생성이 지키는 규칙</h2>
+      <ol class="rules">
+        <li>근무마다 필요 인원, KTAS 자격자 1명 이상, 칩·중간칩 자리 채우기</li>
+        <li>수간호사가 연차·출장인 평일은 D를 주말·공휴일 인원으로 (근무표의 수간호사 칸을 눌러 지정)</li>
+        <li>나이트가 끝나면 OFF 2일 이상</li>
+        <li>N–OFF–N 금지: 나이트 끝나고 쉰 뒤 다음 근무는 D나 E</li>
+        <li>역순 금지: E→D, N→D, N→E</li>
+        <li>연차·출장 다음 날 D 금지 (E, N, OFF는 가능)</li>
+        <li>나이트 연속 최대 3일, 되도록 2일</li>
+        <li>한 달 나이트 최대 9개, 되도록 8개 이하 (10개 이상 불가)</li>
+        <li>연속 근무 최대 5일, 되도록 4일 이내</li>
+        <li>4일 이상 연속 근무하면 그다음 2일 이상 휴식</li>
+        <li>근무 수, 나이트 수, 주말 근무 수를 고르게</li>
+      </ol>
+      <p style="margin-top:10px">공휴일은 근무표 맨 위 날짜를 눌러 지정하거나 해제해요. 2026~2028년 공휴일(제헌절·노동절 포함)은 미리 넣어 두었고, 그 뒤 연도는 공휴일 불러오기를 누르면 인터넷에서 찾아와요.</p>
+    </div>
+    <div>
+      <h2>저장</h2>
+      <p>모든 내용은 지금 쓰는 이 기기의 브라우저에 자동 저장돼요. 다른 기기에서는 보이지 않아요.</p>
+      <button class="btn" id="wipe">이번 달 근무표 전부 지우기</button>
+      <button class="btn danger" id="reset" style="margin-left:6px">모든 데이터 초기화</button>
+    </div>
+  </section>
+</main>
+<div id="shade" hidden></div>
+<div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="shtitle">
+  <h3 id="shtitle"></h3>
+  <div class="picks"><button class="S" data-v="S" hidden>S 출근</button><button class="D" data-v="D">D</button><button class="E" data-v="E">E</button><button class="N" data-v="N">N</button><button data-v="O">OFF</button><button class="V" data-v="V">연차</button><button class="T" data-v="T">출장</button></div>
+  <div id="rolerow"><p>역할 지정 (자동이면 가능한 사람끼리 알아서 나눠요)</p>
+    <div class="roles"><button data-r="">자동</button><button data-r="C">칩</button><button data-r="M">중간칩</button><button data-r="A">액팅</button></div></div>
+  <p id="shhint" class="hint" hidden>연차·출장인 평일은 D가 주말 인원으로 바뀌어요.</p>
+  <ul id="shiss"></ul>
+  <div class="shfoot"><button class="btn" id="shlock"></button><button class="btn ghost" id="shclear">비우기</button><button class="btn ghost" id="shclose" style="margin-left:auto">닫기</button></div>
+</div>
+<div id="toast" hidden></div>
+<script>
+/* ===== 근무표 엔진 ===== */
+const PRE = 5;
+const SHIFTS = ['D','E','N'];
+const isRest = c => c == null || c === 'O' || c === 'V';
+const isWork = c => c === 'D' || c === 'E' || c === 'N' || c === 'T';
+function daysIn(y,m){ return new Date(y,m,0).getDate(); }
+function dow(y,m,d){ return new Date(y,m-1,d).getDay(); }
+function workRun(a,x){ let k=0; while(x>=0 && isWork(a[x])){k++;x--;} return k; }
+function nRun(a,x){ let k=0; while(x>=0 && a[x]==='N'){k++;x--;} return k; }
+function lastWork(a,x){ while(x>=0 && isRest(a[x])) x--; return x>=0 ? a[x] : null; }
+
+function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* ctx: {y,m,L,nurses:[{id,name,ktas,chip,mid,act}], prev:[[5]], fixed:[[L+1]], fixedRole:[[L+1]], req:[d]{D:{n,c,m},...}, weekend:[d]bool} */
+function buildCtx(o){
+  const L = daysIn(o.y,o.m);
+  const hol = new Set(o.holidays||[]);
+  const hoff = new Set(o.headOff||[]);
+  const weekend=[], req=[];
+  for(let d=1; d<=L; d++){
+    const w=dow(o.y,o.m,d);
+    weekend[d] = (w===0||w===6||hol.has(d));
+    req[d] = weekend[d] ? o.staffing.we : (hoff.has(d) ? {D:o.staffing.we.D, E:o.staffing.wk.E, N:o.staffing.wk.N} : o.staffing.wk);
+  }
+  const fixed = o.nurses.map(n=>{ const a=[]; const c=(o.cells[n.id]||{}); for(let d=1;d<=L;d++){ const v=c[d]; a[d]=(v&&v.lock)?v.s:null; } return a; });
+  const fixedRole = o.nurses.map(n=>{ const a=[]; const c=(o.cells[n.id]||{}); for(let d=1;d<=L;d++){ const v=c[d]; a[d]=(v&&v.r)?v.r:null; } return a; });
+  const prev = o.nurses.map((n,i)=> (o.prev && o.prev[i]) ? o.prev[i] : ['O','O','O','O','O']);
+  return { y:o.y, m:o.m, L, nurses:o.nurses, prev, fixed, fixedRole, req, weekend };
+}
+
+function seqFromCells(ctx, cells){ // current (generated + locked) schedule -> h
+  return ctx.nurses.map((n,i)=>{
+    const a = ctx.prev[i].slice();
+    const c = cells[n.id]||{};
+    for(let d=1; d<=ctx.L; d++){ a.push(c[d] ? c[d].s : null); }
+    return a;
+  });
+}
+
+function canWork(h,i,x,s){
+  const a=h[i], p1=a[x-1], p2=a[x-2];
+  if(p1==='N' && s!=='N') return false;
+  if(p2==='N' && p1!=='N') return false;
+  if(s==='D' && (p1==='E'||p1==='V'||p1==='T')) return false;
+  if(s==='N' && nRun(a,x-1)>=3) return false;
+  if(s==='N'){ let c=0; for(let k=PRE;k<a.length;k++) if(a[k]==='N') c++; if(c>=9) return false; }
+  if(s==='N' && p1!=='N' && lastWork(a,x-1)==='N') return false;
+  const run = workRun(a,x-1);
+  if(run>=5) return false;
+  if(isRest(p1) && isWork(p2) && workRun(a,x-2)>=4) return false;
+  const n1=a[x+1], n2=a[x+2];
+  if(s==='N'){
+    if(n1!=null && n1!=='N' && !isRest(n1)) return false;
+    if(n1!=null && n1!=='N' && n2!=null && !isRest(n2)) return false;
+  }
+  if(s==='E' && n1==='D') return false;
+  let r=run+1, k=x+1; while(k<a.length && isWork(a[k])){r++;k++;}
+  if(r>5) return false;
+  if(r>=4 && k+1<a.length && a[k]!=null && isRest(a[k]) && isWork(a[k+1])) return false;
+  return true;
+}
+
+function cap(n,r){ return r==='C'?n.chip : r==='M'?n.mid : n.act; }
+
+function matchRoles(nurses, members, need, fixedRoles){
+  const capLeft = {C:need.c, M:need.m, A:Math.max(0, members.length-need.c-need.m)};
+  const res = {};
+  const free = [];
+  for(const i of members){ const fr=fixedRoles && fixedRoles[i]; if(fr){ res[i]=fr; capLeft[fr]--; } else free.push(i); }
+  const flex = i => ['C','M','A'].filter(r=>cap(nurses[i],r)).length;
+  free.sort((a,b)=>flex(a)-flex(b));
+  let best=null, bestScore=-1; const cur={};
+  const W={C:1000,M:100,A:10};
+  (function rec(k,score){
+    if(k===free.length){ if(score>bestScore){bestScore=score; best=Object.assign({},cur);} return; }
+    const i=free[k];
+    for(const r of ['C','M','A']){
+      if(capLeft[r]>0 && cap(nurses[i],r)){ capLeft[r]--; cur[i]=r; rec(k+1,score+W[r]); capLeft[r]++; }
+    }
+    cur[i]=null; rec(k+1,score);
+  })(0,0);
+  Object.assign(res,best||{});
+  let gotC=0, gotM=0; const none=[];
+  for(const i of members){ if(res[i]==='C')gotC++; else if(res[i]==='M')gotM++; else if(!res[i]) none.push(i); }
+  return { roles:res, missC:Math.max(0,need.c-gotC), missM:Math.max(0,need.m-gotM), none };
+}
+
+function rolesOK(nurses, members, need, fixedRoles){
+  const r=matchRoles(nurses,members,need,fixedRoles); return r.missC===0 && r.missM===0 && r.none.length===0;
+}
+
+function generateOnce(ctx, rnd){
+  const N=ctx.nurses, L=ctx.L, n=N.length;
+  const h = N.map((_,i)=>{ const a=ctx.prev[i].slice(); for(let d=1;d<=L;d++) a.push(ctx.fixed[i][d]); return a; });
+  const load = N.map((_,i)=>{ let k=0; for(let d=1;d<=L;d++){ const f=ctx.fixed[i][d]; if(f && f!=='O') k++; } return k; });
+  const cnt = N.map(()=>({D:0,E:0,N:0}));
+  const we = N.map(()=>0);
+  for(let d=1; d<=L; d++){
+    const x=PRE+d-1;
+    const taken=new Set(), assigned={D:[],E:[],N:[]};
+    for(let i=0;i<n;i++){ const f=ctx.fixed[i][d]; if(f){ taken.add(i); if(assigned[f]) assigned[f].push(i); } }
+    for(const s of ['N','E','D']){
+      const need=ctx.req[d][s];
+      const slots=need.n-assigned[s].length;
+      if(slots<=0) continue;
+      const cands=[];
+      for(let i=0;i<n;i++){
+        if(taken.has(i) || !canWork(h,i,x,s)) continue;
+        const a=h[i], p1=a[x-1];
+        let v = load[i]*7 + cnt[i][s]*5 + (ctx.weekend[d]? we[i]*5 : 0) + rnd()*14;
+        if(s==='N'){ const k=nRun(a,x-1); if(k===1) v-=80; else if(k===2) v+=50; else { const n1=a[x+1]; if(n1!=null && n1!=='N') v+=25; } let c=0; for(let q=PRE;q<a.length;q++) if(a[q]==='N') c++; if(c>=8) v+=90; }
+        const run=workRun(a,x-1); if(run===3) v+=18; else if(run===4) v+=60;
+        if(p1===s) v-=4;
+        cands.push({i,v});
+      }
+      cands.sort((p,q)=>p.v-q.v);
+      const sc={}; cands.forEach(c=>sc[c.i]=c.v);
+      const pick = selectSet(ctx, cands.map(c=>c.i), assigned[s], need, slots, d, s, sc);
+      for(const i of pick){ h[i][x]=s; taken.add(i); load[i]++; cnt[i][s]++; if(ctx.weekend[d]) we[i]++; }
+    }
+    for(let i=0;i<n;i++) if(h[i][x]==null) h[i][x]='O';
+  }
+  return h;
+}
+
+function selectSet(ctx, pool, existing, need, slots, d, s, sc){
+  const N=ctx.nurses, avail=pool.slice(), picked=[];
+  const fr = {}; existing.forEach(i=>{ if(ctx.fixedRole[i][d]) fr[i]=ctx.fixedRole[i][d]; });
+  const take = pred => { const k=avail.findIndex(pred); if(k<0) return false; picked.push(avail[k]); avail.splice(k,1); return true; };
+  let cNeed = need.c - existing.filter(i=>N[i].chip).length;
+  let mNeed = need.m - existing.filter(i=>N[i].mid && !N[i].chip).length;
+  for(let k=0;k<cNeed && picked.length<slots;k++) take(i=>N[i].chip);
+  for(let k=0;k<mNeed && picked.length<slots;k++) take(i=>N[i].mid);
+  while(picked.length<slots){ // 액팅 자리는 칩·중간칩 가능자를 아껴 두고 액팅 전용 간호사부터
+    let bk=-1, bv=Infinity;
+    avail.forEach((i,k)=>{ if(!N[i].act) return; const v=(sc?sc[i]:k)+((N[i].chip||N[i].mid)?22:0); if(v<bv){bv=v;bk=k;} });
+    if(bk<0) break; picked.push(avail[bk]); avail.splice(bk,1); }
+  while(picked.length<slots){ if(!take(()=>true)) break; }
+  // 역할 배치가 안 되면 교체 시도
+  const ok = set => rolesOK(N, set, need, fr);
+  if(!ok(existing.concat(picked))){
+    outer: for(let p=picked.length-1;p>=0;p--){ for(let k=0;k<avail.length;k++){ const t=picked.slice(); t[p]=avail[k]; if(ok(existing.concat(t))){ const old=picked[p]; picked[p]=avail[k]; avail[k]=old; break outer; } } }
+  }
+  // KTAS
+  const all=existing.concat(picked);
+  if(all.length && !all.some(i=>N[i].ktas)){
+    const kc = avail.filter(i=>N[i].ktas);
+    let done=false;
+    for(const c of kc){ for(let p=picked.length-1;p>=0;p--){ const t=picked.slice(); t[p]=c; if(ok(existing.concat(t))){ picked[p]=c; done=true; break; } } if(done) break; }
+    if(!done && kc.length && picked.length){ picked[picked.length-1]=kc[0]; }
+  }
+  return picked;
+}
+
+const NAME_S={D:'D',E:'E',N:'N'};
+function validate(ctx, h){
+  const N=ctx.nurses, L=ctx.L;
+  const cell={}, day={}, roles={}, list=[];
+  let err=0, warn=0, singleN=0;
+  const addC=(i,d,lv,msg)=>{ const k=i+':'+d; (cell[k]=cell[k]||[]).push({lv,msg}); list.push({lv,d,i,msg}); lv==='err'?err++:warn++; };
+  const addD=(d,lv,msg,w=1)=>{ (day[d]=day[d]||[]).push({lv,msg}); list.push({lv,d,i:-1,msg}); lv==='err'?err+=w:warn+=w; };
+  N.forEach((nu,i)=>{
+    const a=h[i]; let nc=0;
+    for(let d=1; d<=L; d++){
+      const x=PRE+d-1, s=a[x], p1=a[x-1], p2=a[x-2];
+      if(s==null) continue;
+      if(p1==='N' && s!=='N' && !isRest(s)) addC(i,d,'err','나이트 후 OFF 2개 필요');
+      else if(p2==='N' && p1!=='N' && !isRest(s)) addC(i,d,'err','나이트 후 OFF 2개 필요');
+      if(s==='D' && p1==='E') addC(i,d,'err','역순 근무 (E→D)');
+      if(s==='D' && (p1==='V'||p1==='T')) addC(i,d,'err','연차·출장 다음 날 D 불가');
+      if(s==='N'){ nc++; if(nc>=10) addC(i,d,'err','이번 달 나이트 '+nc+'개째 (최대 9개)'); else if(nc===9) addC(i,d,'warn','나이트 9개째 (되도록 8개 이하)');
+        const k=nRun(a,x); if(k>=4) addC(i,d,'err','나이트 4일 이상 연속'); else if(k===3) addC(i,d,'warn','나이트 3일 연속');
+        if(k===1 && a[x+1]!=null && a[x+1]!=='N') singleN++;
+        if(p1!=='N' && lastWork(a,x-1)==='N') addC(i,d,'err','N 끝나고 쉰 뒤 바로 N 불가 (사이에 D·E 필요)'); }
+      if(isWork(s)){ const r=workRun(a,x); if(r>=6) addC(i,d,'err','연속 근무 5일 초과'); else if(r===5) addC(i,d,'warn','5일 연속 근무');
+        if(isRest(p1) && p1!=null && isWork(p2) && workRun(a,x-2)>=4) addC(i,d,'err','4일 이상 근무 후 2일 이상 휴식 필요'); }
+    }
+  });
+  const counts={};
+  for(let d=1; d<=L; d++){
+    const x=PRE+d-1; counts[d]={}; roles[d]={};
+    for(const s of SHIFTS){
+      const mem=[]; N.forEach((_,i)=>{ if(h[i][x]===s) mem.push(i); });
+      counts[d][s]=mem.length;
+      const need=ctx.req[d][s];
+      if(mem.length<need.n) addD(d,'err',s+' '+(need.n-mem.length)+'명 부족',(need.n-mem.length)*2);
+      else if(mem.length>need.n) addD(d,'warn',s+' '+(mem.length-need.n)+'명 초과');
+      if(mem.length && !mem.some(i=>N[i].ktas)) addD(d,'err',s+' KTAS 자격자 없음');
+      const fr={}; mem.forEach(i=>{ if(ctx.fixedRole[i][d]) fr[i]=ctx.fixedRole[i][d]; });
+      const m=matchRoles(N,mem,need,fr);
+      roles[d][s]=m.roles;
+      if(mem.length){
+        if(m.missC) addD(d,'err',s+' 칩 가능자 부족');
+        if(m.missM) addD(d,'err',s+' 중간칩 가능자 부족');
+        m.none.forEach(i=>addC(i,d,'err',s+' 맡을 수 있는 역할 없음'));
+      }
+    }
+  }
+  // 공평성
+  const stats = N.map((_,i)=>{ const st={D:0,E:0,N:0,O:0,V:0,T:0,we:0}; for(let d=1;d<=L;d++){ const s=h[i][PRE+d-1]; if(s) st[s]++; else st.O++; if(ctx.weekend[d] && (s==='D'||s==='E'||s==='N')) st.we++; } return st; });
+  const variance = arr => { if(!arr.length) return 0; const m=arr.reduce((p,q)=>p+q,0)/arr.length; return arr.reduce((p,q)=>p+(q-m)*(q-m),0); };
+  const fair = variance(stats.map(s=>s.D+s.E+s.N+s.T+s.V))*6 + variance(stats.map(s=>s.N))*4 + variance(stats.map(s=>s.we))*3 + variance(stats.map(s=>s.D))*1.5 + variance(stats.map(s=>s.E))*1.5;
+  const penalty = err*1000 + warn*40 + singleN*15 + fair;
+  return { cell, day, roles, counts, stats, list, err, warn, penalty };
+}
+
+function generate(ctx, iters, seed){
+  let best=null, bestV=null;
+  const rnd=mulberry(seed||Date.now());
+  for(let t=0;t<iters;t++){
+    const h=generateOnce(ctx,rnd); const v=validate(ctx,h);
+    if(!best || v.penalty<bestV.penalty){ best=h; bestV=v; }
+  }
+  return {h:best, v:bestV};
+}
+if(typeof module!=='undefined') module.exports={buildCtx,generate,generateOnce,validate,mulberry,PRE,daysIn,dow,seqFromCells,matchRoles};
+
+const ENG={buildCtx,generate,generateOnce,validate,mulberry,PRE,daysIn,dow,seqFromCells,matchRoles};
+/* ===== 화면 ===== */
+const KEY='er-roster-v1';
+const HOLI={ '2026':['1-1','2-16','2-17','2-18','3-2','5-1','5-5','5-25','6-3','7-17','8-17','9-24','9-25','9-26','10-5','10-9','12-25'],
+             '2027':['1-1','2-8','2-9','3-1','5-3','5-5','5-13','7-19','8-16','9-14','9-15','9-16','10-4','10-11','12-27'],
+             '2028':['1-26','1-27','1-28','3-1','4-12','5-1','5-2','5-5','6-6','7-17','8-15','10-2','10-3','10-4','10-5','10-9','12-25'] };
+const LABEL={D:'D',E:'E',N:'N',O:'OFF',V:'연차',T:'출장'};
+const SHORT={D:'D',E:'E',N:'N',O:'/',V:'연',T:'출'};
+const ROLE={C:'칩',M:'중간칩',A:'액팅'};
+const WD=['일','월','화','수','목','금','토'];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function defState(){
+  const t=new Date(); let y=t.getFullYear(), m=t.getMonth()+2; if(m>12){m=1;y++;}
+  return { nurses:[], head:{name:'수간호사',show:true},
+    staffing:{ wk:{D:{n:2,c:1,m:0},E:{n:3,c:1,m:1},N:{n:3,c:1,m:1}}, we:{D:{n:3,c:1,m:1},E:{n:3,c:1,m:1},N:{n:3,c:1,m:1}} },
+    months:{}, cur:y+'-'+String(m).padStart(2,'0') };
+}
+let S;
+try{ S=JSON.parse(localStorage.getItem(KEY)); }catch(e){ S=null; }
+if(!S || !S.nurses) S=defState();
+let saveOk=true;
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ saveOk=false; } }
+
+function ym(){ const [y,m]=S.cur.split('-').map(Number); return {y,m}; }
+function monthData(){
+  if(!S.months[S.cur]){
+    const {y,m}=ym(); const hol=(HOLI[y]||[]).filter(s=>+s.split('-')[0]===m).map(s=>+s.split('-')[1]);
+    S.months[S.cur]={holidays:hol, cells:{}};
+  }
+  return S.months[S.cur];
+}
+function prevKey(){ let {y,m}=ym(); m--; if(m<1){m=12;y--;} return y+'-'+String(m).padStart(2,'0'); }
+function parseTail(str){
+  const map={D:'D',E:'E',N:'N',O:'O','/':'O','0':'O','연':'V',V:'V','출':'T',T:'T',X:'O'};
+  const out=[]; for(const ch of String(str||'').toUpperCase().replace(/\s/g,'')){ if(map[ch]) out.push(map[ch]); }
+  const t=out.slice(-5); while(t.length<5) t.unshift('O'); return t;
+}
+function prevTails(){
+  const pk=prevKey(), pm=S.months[pk];
+  return S.nurses.map(n=>{
+    if(pm && pm.cells[n.id] && Object.keys(pm.cells[n.id]).length){
+      const [py,pmo]=pk.split('-').map(Number), L=ENG.daysIn(py,pmo), a=[];
+      for(let d=L-4; d<=L; d++){ const c=pm.cells[n.id][d]; a.push(c?c.s:'O'); }
+      return {t:a, auto:true};
+    }
+    return {t:parseTail(n.prevTail), auto:false};
+  });
+}
+function ctxNow(){
+  const md=monthData(), {y,m}=ym(), pt=prevTails();
+  return ENG.buildCtx({y,m,nurses:S.nurses,cells:md.cells,holidays:md.holidays,headOff:Object.keys(md.headOff||{}).map(Number),staffing:S.staffing,prev:pt.map(p=>p.t)});
+}
+
+/* ---------- 렌더 ---------- */
+let tab='grid', lastV=null;
+function render(){
+  const {y,m}=ym();
+  $('#month').textContent=y+'년 '+m+'월';
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===tab));
+  document.querySelectorAll('.pane').forEach(p=>p.hidden = p.id!=='pane-'+tab);
+  $('#nc').textContent=S.nurses.length;
+  if(tab==='grid') renderGrid(); else if(tab==='nurses') renderNurses(); else renderSettings();
+  $('#savewarn').hidden=saveOk;
+}
+
+function renderGrid(){
+  const wrap=$('#gridwrap');
+  if(!S.nurses.length){ wrap.innerHTML='<div class="empty"><p>먼저 간호사 명단을 입력해 주세요.</p><button class="btn primary" data-go="nurses">간호사 추가하기</button></div>'; $('#issues').innerHTML=''; $('#gridtools').hidden=true; return; }
+  $('#gridtools').hidden=false;
+  const md=monthData(), ctx=ctxNow(), h=ENG.seqFromCells(ctx,md.cells), v=ENG.validate(ctx,h); lastV=v;
+  const L=ctx.L, {y,m}=ym(), hol=new Set(md.holidays);
+  let html='<table class="grid"><thead><tr><th class="name corner">이름</th>';
+  for(let d=1; d<=L; d++){
+    const w=ENG.dow(y,m,d), cls=(hol.has(d)||w===0)?'sun':(w===6?'sat':'');
+    html+=`<th class="dh ${cls} ${ctx.weekend[d]?'we':''}" data-hd="${d}" title="눌러서 공휴일 지정/해제"><span>${d}</span><small>${hol.has(d)?'휴':WD[w]}</small></th>`;
+  }
+  html+='<th class="st">D</th><th class="st">E</th><th class="st">N</th><th class="st">OFF</th></tr></thead><tbody>';
+  if(S.head.show){
+    html+=`<tr class="head"><th class="name">${esc(S.head.name)}<small>수간호사</small></th>`;
+    const ho=md.headOff||{};
+    for(let d=1; d<=L; d++){ if(ctx.weekend[d]){ html+='<td class="c"><span class="sh O">/</span></td>'; continue; } const hv=ho[d]; html+=`<td class="c" data-hdd="${d}" title="눌러서 연차·출장 지정">${hv?`<span class="sh ${hv} lock">${SHORT[hv]}</span>`:'<span class="sh S">S</span>'}</td>`; }
+    html+='<td colspan="4"></td></tr>';
+  }
+  S.nurses.forEach((n,i)=>{
+    const tags=[n.ktas?'<b class="k">K</b>':'', n.chip?'칩':'', n.mid?'중':'', n.act?'액':''].filter(Boolean).join(' ');
+    html+=`<tr><th class="name">${esc(n.name||'(이름 없음)')}<small>${tags}</small></th>`;
+    const c=md.cells[n.id]||{};
+    for(let d=1; d<=L; d++){
+      const cv=c[d], s=cv?cv.s:null, iss=v.cell[i+':'+d];
+      const lv=iss? (iss.some(x=>x.lv==='err')?'err':'warn') : '';
+      let role=''; if(s && v.roles[d] && v.roles[d][s]){ const r=v.roles[d][s][i]; if(r==='C') role='칩'; else if(r==='M') role='중'; }
+      html+=`<td class="c ${lv}" data-i="${i}" data-d="${d}" ${iss?`title="${esc(iss.map(x=>x.msg).join(', '))}"`:''}>`+
+        (s?`<span class="sh ${s} ${cv.lock?'lock':''}">${SHORT[s]}${role?`<i>${role}</i>`:''}</span>`:'<span class="sh none">·</span>')+'</td>';
+    }
+    const st=v.stats[i];
+    html+=`<td class="st">${st.D}</td><td class="st">${st.E}</td><td class="st">${st.N}</td><td class="st">${st.O+st.V}</td></tr>`;
+  });
+  html+='</tbody><tfoot>';
+  for(const s of ['D','E','N']){
+    html+=`<tr><th class="name">${s} 인원</th>`;
+    for(let d=1; d<=L; d++){ const got=v.counts[d][s], need=ctx.req[d][s].n; html+=`<td class="ft ${got<need?'bad':got>need?'over':''}">${got}</td>`; }
+    html+='<td colspan="4"></td></tr>';
+  }
+  html+='<tr><th class="name">KTAS·역할</th>';
+  for(let d=1; d<=L; d++){ const bad=(v.day[d]||[]).some(x=>/KTAS|칩/.test(x.msg)); html+=`<td class="ft ${bad?'bad':'ok'}">${bad?'!':'✓'}</td>`; }
+  html+='<td colspan="4"></td></tr></tfoot></table>';
+  wrap.innerHTML=html;
+  // 문제 목록
+  const list=v.list.slice().sort((a,b)=>(a.lv===b.lv?0:a.lv==='err'?-1:1)||a.d-b.d);
+  const ib=$('#issues');
+  const filled=Object.values(md.cells).some(c=>Object.keys(c).length);
+  if(!filled){ ib.innerHTML='<p class="hint">연차·출장·희망 OFF처럼 미리 정해진 칸을 눌러 먼저 입력한 뒤 <b>자동 생성</b>을 누르세요. 직접 입력한 칸은 다시 생성해도 그대로 남아요.</p>'; return; }
+  if(!list.length){ ib.innerHTML='<p class="allok">모든 조건을 지키고 있어요.</p>'; return; }
+  const ne=list.filter(x=>x.lv==='err').length, nw=list.length-ne;
+  ib.innerHTML=`<h3>확인이 필요한 곳 <span class="pill err">위반 ${ne}</span> <span class="pill warn">주의 ${nw}</span></h3><ul>`+
+    list.slice(0,80).map(x=>`<li class="${x.lv}"><b>${m}/${x.d}</b> ${x.i>=0?esc(S.nurses[x.i].name)+' · ':''}${esc(x.msg)}</li>`).join('')+
+    (list.length>80?`<li>외 ${list.length-80}건</li>`:'')+'</ul>';
+}
+
+function toggle(lbl,on,attr){ return `<button class="tg ${on?'on':''}" ${attr} aria-pressed="${on}">${lbl}</button>`; }
+function renderNurses(){
+  const pt=prevTails();
+  let html='';
+  S.nurses.forEach((n,i)=>{
+    html+=`<div class="nurse" data-n="${i}">
+      <div class="nrow1"><input class="nm" value="${esc(n.name)}" placeholder="이름" data-f="name" aria-label="이름">
+        <div class="mv"><button class="ic" data-act="up" aria-label="위로" ${i===0?'disabled':''}>↑</button><button class="ic" data-act="down" aria-label="아래로" ${i===S.nurses.length-1?'disabled':''}>↓</button><button class="ic del" data-act="del" aria-label="삭제">✕</button></div></div>
+      <div class="tgs">${toggle('KTAS',n.ktas,'data-f="ktas"')}${toggle('칩',n.chip,'data-f="chip"')}${toggle('중간칩',n.mid,'data-f="mid"')}${toggle('액팅',n.act,'data-f="act"')}</div>
+      <label class="tail">전월 마지막 5일 ${pt[i].auto?`<span class="auto">지난달 근무표에서 자동: ${pt[i].t.map(c=>SHORT[c]).join('')}</span>`:`<input value="${esc(n.prevTail||'')}" data-f="prevTail" placeholder="예: DDO NN (연·출 가능)" maxlength="10">`}</label>
+    </div>`;
+  });
+  $('#nlist').innerHTML=html || '<p class="hint">아직 명단이 없어요. 아래에 이름을 한 줄에 한 명씩 붙여넣으면 한 번에 추가돼요.</p>';
+}
+
+function renderSettings(){
+  const row=(k,lbl)=>{ let h=`<tr><th>${lbl}</th>`; for(const s of ['D','E','N']){ const o=S.staffing[k][s]; h+=`<td><div class="trio">
+      ${num(k,s,'n',o.n,'인원')}${num(k,s,'c',o.c,'칩')}${num(k,s,'m',o.m,'중간칩')}</div></td>`; } return h+'</tr>'; };
+  $('#stafftbl').innerHTML=`<table class="staff"><thead><tr><th></th><th><span class="sh D">D</span></th><th><span class="sh E">E</span></th><th><span class="sh N">N</span></th></tr></thead><tbody>${row('wk','평일')}${row('we','주말·공휴일')}</tbody></table>`;
+  $('#headname').value=S.head.name; $('#headshow').checked=S.head.show;
+}
+function num(k,s,f,v,l){ return `<label>${l}<input type="number" min="0" max="20" value="${v}" data-k="${k}" data-s="${s}" data-f="${f}"></label>`; }
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-hd],td[data-i],td[data-hdd]'); if(!t) return;
+  if(t.dataset.tab){ tab=t.dataset.tab; render(); return; }
+  if(t.dataset.go){ tab=t.dataset.go; render(); return; }
+  if(t.id==='prev'||t.id==='next'){ let {y,m}=ym(); m+=t.id==='prev'?-1:1; if(m<1){m=12;y--;} if(m>12){m=1;y++;} S.cur=y+'-'+String(m).padStart(2,'0'); save(); render(); return; }
+  if(t.dataset.hd){ const d=+t.dataset.hd, md=monthData(), k=md.holidays.indexOf(d); if(k>=0) md.holidays.splice(k,1); else md.holidays.push(d); save(); render(); toast(`${ym().m}/${d} ${k>=0?'공휴일 해제':'공휴일로 지정'}`); return; }
+  if(t.dataset.hdd){ openHeadSheet(+t.dataset.hdd); return; }
+  if(t.dataset.i!=null && t.tagName==='TD'){ openSheet(+t.dataset.i,+t.dataset.d); return; }
+  const nd=t.closest('.nurse');
+  if(nd){ const i=+nd.dataset.n, n=S.nurses[i];
+    if(t.dataset.f){ n[t.dataset.f]=!n[t.dataset.f]; save(); renderNurses(); return; }
+    if(t.dataset.act==='up'&&i>0){ [S.nurses[i-1],S.nurses[i]]=[S.nurses[i],S.nurses[i-1]]; save(); renderNurses(); return; }
+    if(t.dataset.act==='down'&&i<S.nurses.length-1){ [S.nurses[i+1],S.nurses[i]]=[S.nurses[i],S.nurses[i+1]]; save(); renderNurses(); return; }
+    if(t.dataset.act==='del'){ if(confirm(`${n.name||'이 간호사'}를 명단에서 삭제할까요?`)){ S.nurses.splice(i,1); save(); renderNurses(); $('#nc').textContent=S.nurses.length; } return; }
+  }
+  if(t.id==='addn'){ const ta=$('#bulk'), names=ta.value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);
+    if(!names.length) names.push('');
+    names.forEach(nm=>S.nurses.push({id:uid(),name:nm,ktas:false,chip:false,mid:false,act:true,prevTail:''}));
+    ta.value=''; save(); renderNurses(); $('#nc').textContent=S.nurses.length; return; }
+  if(t.id==='gen') return runGen();
+  if(t.id==='holi') return loadHolidays();
+  if(t.id==='clear'){ if(!confirm('자동 생성된 칸을 지울까요? 직접 입력한 칸은 남아요.')) return; const md=monthData(); for(const id in md.cells) for(const d in md.cells[id]) if(!md.cells[id][d].lock) delete md.cells[id][d]; save(); render(); return; }
+  if(t.id==='wipe'){ if(!confirm('이번 달 근무표를 직접 입력한 칸까지 모두 지울까요?')) return; monthData().cells={}; save(); render(); return; }
+  if(t.id==='xlsx') return exportX();
+  if(t.id==='reset'){ if(!confirm('명단, 설정, 모든 달의 근무표를 지웁니다. 되돌릴 수 없어요.')) return; S=defState(); save(); tab='grid'; render(); return; }
+  if(t.closest('#sheet')) sheetClick(t);
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  const nd=t.closest('.nurse'); if(nd && t.dataset.f){ S.nurses[+nd.dataset.n][t.dataset.f]=t.value; save(); return; }
+  if(t.dataset.k){ S.staffing[t.dataset.k][t.dataset.s][t.dataset.f]=Math.max(0,Math.min(20,parseInt(t.value)||0)); save(); return; }
+  if(t.id==='headname'){ S.head.name=t.value; save(); }
+});
+document.addEventListener('change',e=>{ if(e.target.id==='headshow'){ S.head.show=e.target.checked; save(); } });
+
+/* ---------- 칸 편집 시트 ---------- */
+let sh=null;
+function openSheet(i,d){
+  sh={i,d}; const md=monthData(), c=(md.cells[S.nurses[i].id]||{})[d], {y,m}=ym();
+  $('#shtitle').textContent=`${S.nurses[i].name} · ${m}월 ${d}일 (${WD[ENG.dow(y,m,d)]})`;
+  const iss=lastV&&lastV.cell[i+':'+d];
+  $('#shiss').innerHTML=iss? iss.map(x=>`<li class="${x.lv}">${esc(x.msg)}</li>`).join('') : '';
+  document.querySelectorAll('#sheet [data-v]').forEach(b=>b.setAttribute('aria-pressed', !!c && c.s===b.dataset.v));
+  const rv=c&&c.r||''; document.querySelectorAll('#sheet [data-r]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.r===rv));
+  document.querySelectorAll('#sheet [data-v]').forEach(b=>b.hidden=b.dataset.v==='S'); $('#shclear').hidden=false; $('#shhint').hidden=true;
+  $('#rolerow').hidden=!(c && 'DEN'.includes(c.s));
+  $('#shlock').hidden=!c; $('#shlock').textContent = c&&c.lock ? '고정 해제 (다시 생성하면 바뀔 수 있음)' : '이 칸 고정하기';
+  $('#sheet').hidden=false; $('#shade').hidden=false;
+  $('#sheet [data-v]').focus();
+}
+function openHeadSheet(d){
+  sh={head:true,d}; const md=monthData(), {y,m}=ym(), hv=(md.headOff||{})[d]||'S';
+  $('#shtitle').textContent=`${S.head.name} · ${m}월 ${d}일 (${WD[ENG.dow(y,m,d)]})`;
+  $('#shiss').innerHTML=''; $('#shhint').hidden=false;
+  document.querySelectorAll('#sheet [data-v]').forEach(b=>{ const v=b.dataset.v; b.hidden=!['S','V','T'].includes(v); b.setAttribute('aria-pressed', v===hv); });
+  $('#rolerow').hidden=true; $('#shlock').hidden=true; $('#shclear').hidden=true;
+  $('#sheet').hidden=false; $('#shade').hidden=false;
+}
+function closeSheet(){ $('#sheet').hidden=true; $('#shade').hidden=true; sh=null; }
+function sheetClick(t){
+  if(!sh) return;
+  if(sh.head){ const md=monthData(); md.headOff=md.headOff||{};
+    if(t.dataset.v){ if(t.dataset.v==='S') delete md.headOff[sh.d]; else md.headOff[sh.d]=t.dataset.v; }
+    else if(t.id!=='shclose') return;
+    save(); closeSheet(); render(); return; }
+  const n=S.nurses[sh.i], md=monthData(); md.cells[n.id]=md.cells[n.id]||{}; const cs=md.cells[n.id];
+  if(t.dataset.v){ cs[sh.d]={s:t.dataset.v, r:null, lock:true}; }
+  else if(t.dataset.r!=null){ if(cs[sh.d]){ cs[sh.d].r=t.dataset.r||null; cs[sh.d].lock=true; } }
+  else if(t.id==='shclear'){ delete cs[sh.d]; }
+  else if(t.id==='shlock'){ if(cs[sh.d]) cs[sh.d].lock=!cs[sh.d].lock; }
+  else if(t.id!=='shclose') return;
+  save(); const {i,d}=sh; closeSheet(); render();
+  if(t.dataset.v && 'DEN'.includes(t.dataset.v)) openSheet(i,d);
+}
+$('#shade').addEventListener('click',closeSheet);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && sh) closeSheet(); });
+
+/* ---------- 자동 생성 ---------- */
+let busy=false;
+function runGen(){
+  if(busy) return;
+  const ctx=ctxNow();
+  const bad=S.nurses.filter(n=>!n.chip&&!n.mid&&!n.act);
+  if(bad.length){ toast(`${bad[0].name||'이름 없는 간호사'}에게 역할(칩/중간칩/액팅)을 하나 이상 켜 주세요.`); return; }
+  busy=true; const btn=$('#gen'); btn.disabled=true;
+  const rnd=ENG.mulberry(Date.now()); let best=null, bv=null, tries=0; const t0=performance.now(), BUDGET=2500;
+  (function step(){
+    const s=performance.now();
+    while(performance.now()-s<60){ const h=ENG.generateOnce(ctx,rnd), v=ENG.validate(ctx,h); tries++; if(!bv||v.penalty<bv.penalty){best=h;bv=v;} if(bv.err===0 && bv.warn===0 && tries>150) break; }
+    btn.textContent=`짜는 중… ${tries}회`;
+    if(performance.now()-t0<BUDGET && !(bv.err===0&&bv.warn===0&&tries>150)) return setTimeout(step,0);
+    const md=monthData();
+    S.nurses.forEach((n,i)=>{ md.cells[n.id]=md.cells[n.id]||{}; const cs=md.cells[n.id];
+      for(let d=1; d<=ctx.L; d++){ if(cs[d]&&cs[d].lock) continue; const s=best[i][ENG.PRE+d-1]; cs[d]={s, r:null, lock:false}; } });
+    save(); busy=false; btn.disabled=false; btn.textContent='자동 생성'; render();
+    toast(bv.err? `완성했지만 지키지 못한 조건이 ${bv.err}건 있어요. 아래 목록을 확인하세요.` : bv.warn? `완성! 주의 ${bv.warn}건 (3연속 N·5일 연속 등)` : '완성! 모든 조건을 지켰어요.');
+  })();
+}
+
+/* ---------- 엑셀 ---------- */
+let dl=null;
+async function exportX(){
+  if(typeof XLSX==='undefined'){ toast('엑셀 기능을 불러오지 못했어요. 인터넷 연결을 확인하세요.'); return; }
+  const md=monthData(), ctx=ctxNow(), {y,m}=ym(), h=ENG.seqFromCells(ctx,md.cells), v=ENG.validate(ctx,h), L=ctx.L;
+  const rows=[]; const hd=['이름']; for(let d=1;d<=L;d++) hd.push(`${d}(${md.holidays.includes(d)?'휴':WD[ENG.dow(y,m,d)]})`); hd.push('D','E','N','OFF','연차','출장'); rows.push(hd);
+  if(S.head.show){ const r=[S.head.name]; const ho=md.headOff||{}; for(let d=1;d<=L;d++) r.push(ctx.weekend[d]?'OFF':(ho[d]?LABEL[ho[d]]:'S')); rows.push(r); }
+  S.nurses.forEach((n,i)=>{ const r=[n.name]; const c=md.cells[n.id]||{};
+    for(let d=1;d<=L;d++){ const cv=c[d]; if(!cv){r.push('');continue;} let txt=LABEL[cv.s]; const rr=v.roles[d][cv.s]&&v.roles[d][cv.s][i]; if(rr==='C')txt+='(칩)'; else if(rr==='M')txt+='(중간칩)'; r.push(txt); }
+    const st=v.stats[i]; r.push(st.D,st.E,st.N,st.O,st.V,st.T); rows.push(r); });
+  rows.push([]); for(const s of ['D','E','N']){ const r=[s+' 인원']; for(let d=1;d<=L;d++) r.push(v.counts[d][s]); rows.push(r); }
+  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:10}].concat(Array(L).fill({wch:7}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,`${m}월 근무표`);
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  const fname=`응급실_근무표_${y}년${m}월.xlsx`, blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  if(!dl){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); toast('엑셀 파일을 저장했어요.'); return; }
+  try{ await dl.save({filename:fname, data:blob}); toast('엑셀 파일을 저장했어요.'); }
+  catch(err){ if(err&&err.code==='declined') return; toast(err&&err.code==='rate_limited'?'잠시 후 다시 눌러 주세요.':'파일을 저장하지 못했어요.'); }
+}
+(async()=>{ const inClaude=!!(window.claude && window.claude.use); try{ if(inClaude){ dl=await window.claude.use('downloads'); } }catch(e){ dl=null; } $('#xlsx').hidden=!(dl || !inClaude); })();
+
+async function loadHolidays(){
+  const {y,m}=ym(), md=monthData(), before=md.holidays.length;
+  const add=days=>{ days.forEach(d=>{ if(!md.holidays.includes(d)) md.holidays.push(d); }); md.holidays.sort((a,b)=>a-b); save(); render(); };
+  if(HOLI[y]){ add(HOLI[y].filter(s=>+s.split('-')[0]===m).map(s=>+s.split('-')[1]));
+    const n=md.holidays.length-before; toast(n? `${m}월 공휴일 ${n}일을 추가했어요.` : `${m}월 공휴일은 이미 모두 들어가 있어요.`); return; }
+  toast('인터넷에서 공휴일을 찾는 중…');
+  try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),8000);
+    const r=await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/KR`,{signal:ctl.signal}); clearTimeout(to);
+    if(!r.ok) throw 0; const list=await r.json();
+    add(list.filter(h=>+h.date.slice(5,7)===m).map(h=>+h.date.slice(8,10)));
+    toast(`${y}년 ${m}월 공휴일을 불러왔어요. 대체·임시공휴일이 빠졌을 수 있으니 한 번 확인해 주세요.`);
+  }catch(e){ toast(`${y}년 공휴일을 불러오지 못했어요. 날짜를 눌러 직접 지정해 주세요.`); }
+}
+let tt; function toast(msg){ const el=$('#toast'); el.textContent=msg; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,3200); }
+render();
+
+</script>
+</body>
+</html>
